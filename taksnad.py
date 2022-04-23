@@ -1,5 +1,5 @@
-import pygame
-from mainMenu import*
+import pygame, sys
+from mainMenu import* 
 pygame.init()
 
 oknoX,oknoY = 600,500

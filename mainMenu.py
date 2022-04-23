@@ -1,36 +1,18 @@
-import pygame, sys
+from cgi import print_directory
+import pygame
+from textures import bot_texture, texture1, texture2, texture3, texture4, texture5
 pygame.init()
 pygame.display.set_caption("rush hours")
 
 oknoX,oknoY = 600,500
 win = pygame.display.set_mode((oknoX,oknoY))
-tile = pygame.image.load("C:/Users/fifah/Desktop/1E-školní dokumenty/programko/python/programy/tile.jpg")
-marioTile = pygame.image.load("C:/Users/fifah/Desktop/1E-školní dokumenty/programko/python/programy/mariotile.jpg")
-#herní pole, které se vytvoří podle různých znaků vepsaných do str
+tile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/tile.jpg")
+marioTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/mariotile.jpg")
 
-texture = """##########
-#TTTTTT  #
-#KKKMMM O#
-#   UU LO#
-#HH jG LDF
-#XLLjG LD#
-#X   G AA#
-#XPPP II #
-##########"""
-
-botTexture = """##########
-#LLLLLLLL#
-#        #
-#    kp  #
-#HH  kpOs F 
-#    kpO #
-#      O #
-#        #
-##########"""
-#potřebné proměnné na vytvoření menu
-font = pygame.font.SysFont('Arial', 45)
+#obdelníky potřebné pro metodu collidepoint
 mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
-mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2) 
+mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2)
+bckToMainRect = pygame.Rect(450,200,50,50)
 
 ####################################################################################
 
@@ -181,12 +163,12 @@ class Draw():
         self.game = game
 
     def draw(self):
-
+        global maps
         if self.game.gamemode == "Game" or self.game.gamemode == "Bot":
             win.fill((35,30,30))
             win.blit(marioTile,(450,200))
             color,selectColor,frajerColor,frajerSelectColor = (150,0,0),(0,150,0),(0,0,220),(255, 0, 255)
-            
+            default_color, complete_color = (70,70,70), (0,230,0)
             for y in range(len(self.game.mapa)):
                 for x in range(len(self.game.mapa[0])):
                     if self.game.mapa[y][x] == "#":
@@ -209,6 +191,9 @@ class Draw():
 
         elif self.game.gamemode == "Main":
             win.fill((35,30,30))
+            mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
+            mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2) 
+            font = pygame.font.SysFont("Arial", 45)
             text1 = font.render("SinglePlayer", True,(230,230,230))
             text2 = font.render("Bottares", True,(230,230,230))
             pygame.draw.rect(win, (70,70,70), pygame.Rect(mainRect1))
@@ -218,39 +203,87 @@ class Draw():
             pygame.display.update()
 
         elif self.game.gamemode == "End":
-            win.fill((35,30,30))
-            text3 = font.render("You win", True,(230,230,230))
-            text4 = font.render("Main menu", True,(230,230,230))
-            pygame.draw.rect(win, (70,70,70), pygame.Rect(mainRect1))
-            pygame.draw.rect(win, (70,70,70), pygame.Rect(mainRect2))
-            win.blit(text3,(oknoX//2 - 65,oknoY//3*2 - 200))
-            win.blit(text4,(oknoX//2 - 95,oknoY//3*1 + 145))
+            win.fill((0,0,0))
+            font2 = pygame.font.SysFont("comicsans", 100)
+            font3 = pygame.font.SysFont("javanesetext", 40)
+            text3 = font2.render("GAME OVER", True,(230,230,230))
+            text4 = font3.render("click to get to the main menu", True,(230,230,230))
+            win.blit(text3,(oknoX//2 - 220, oknoY//3))
+            win.blit(text4,(oknoX//2 - 250, oknoY//3*2))
+            pygame.display.update()
+
+        elif self.game.gamemode == "Levels":
+            font4 = pygame.font.SysFont("comicsans", 100)
+            text5 = font4.render("LEVELS", True,(230,230,230))
+            l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
+            l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
+            l3 = pygame.Rect(oknoX//5*3 - 110, oknoY//3 + 80,100,150)
+            l4 = pygame.Rect(oknoX//5*4 - 110, oknoY//3 + 80,100,150)
+            l5 = pygame.Rect(oknoX//5*5 - 110, oknoY//3 + 80,100,150)
+            maps = []
+            maps.append(l1)
+            maps.append(l2)
+            maps.append(l3)
+            maps.append(l4)
+            maps.append(l5)
+            win.fill((0,0,0))
+            for i in maps:
+                pygame.draw.rect(win,(70,70,70),pygame.Rect(i))
+            win.blit(text5, (oknoX//2 - 125, oknoY//3 - 85))
             pygame.display.update()
 
 #metoda, která obstarává všechny menu a obsahuje metodu pro překlikávání mezi rects
 class Select():
     def __init__(self,game):
         self.game = game
+        self.level = None
 
     def select(self):
         
         if self.game.gamemode == "Main":
-            if mainRect1.collidepoint(pygame.mouse.get_pos()) and self.game.gamemode == "Main":
+            if mainRect1.collidepoint(pygame.mouse.get_pos()):
                 self.game.obdelniky = []
-                self.game.readMap_createObj(texture)
-                self.game.gamemode = "Game"
+                self.game.gamemode = "Levels"
 
-            elif mainRect2.collidepoint(pygame.mouse.get_pos()) and self.game.gamemode == "Main":
+            elif mainRect2.collidepoint(pygame.mouse.get_pos()):
                 self.game.obdelniky = []
-                self.game.readMap_createObj(botTexture)
+                self.game.readMap_createObj(bot_texture)
                 self.game.gamemode = "Bot"
-        
+
         elif self.game.gamemode == "Game":
             for i in self.game.obdelniky:
                 if i.collidepoint(pygame.mouse.get_pos()):
                     self.game.radioactive = i
-                    
+            
         elif self.game.gamemode == "End":
-            endRect = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2)
-            if endRect.collidepoint(pygame.mouse.get_pos()) and self.game.gamemode == "End":
-                self.game.gamemode = "Main"
+            self.game.gamemode = "Main"
+        
+        elif self.game.gamemode == "Levels":
+            self.level_select()
+    
+    def level_select(self):
+        self.l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
+        self.l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
+        self.l3 = pygame.Rect(oknoX//5*3 - 110, oknoY//3 + 80,100,150)
+        self.l4 = pygame.Rect(oknoX//5*4 - 110, oknoY//3 + 80,100,150)
+        self.l5 = pygame.Rect(oknoX//5*5 - 110, oknoY//3 + 80,100,150)
+        map01 = texture1
+        map02 = texture2
+        map03 = texture3
+        map04 = texture4
+        map05 = texture5
+        if self.l1.collidepoint(pygame.mouse.get_pos()):
+            self.game.readMap_createObj(map01)
+            self.game.gamemode = "Game"
+        if self.l2.collidepoint(pygame.mouse.get_pos()):
+            self.game.readMap_createObj(map02)
+            self.game.gamemode = "Game"
+        if self.l3.collidepoint(pygame.mouse.get_pos()):
+            self.game.readMap_createObj(map03)
+            self.game.gamemode = "Game"
+        if self.l4.collidepoint(pygame.mouse.get_pos()):
+            self.game.readMap_createObj(map04)
+            self.game.gamemode = "Game"
+        if self.l5.collidepoint(pygame.mouse.get_pos()):
+            self.game.readMap_createObj(map05)
+            self.game.gamemode = "Game"
