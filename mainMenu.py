@@ -1,6 +1,6 @@
-from cgi import print_directory
 import pygame
 from textures import bot_texture, texture1, texture2, texture3, texture4, texture5
+
 pygame.init()
 pygame.display.set_caption("rush hours")
 
@@ -12,7 +12,6 @@ marioTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/mariotile.jpg
 #obdelníky potřebné pro metodu collidepoint
 mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
 mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2)
-bckToMainRect = pygame.Rect(450,200,50,50)
 
 ####################################################################################
 
@@ -51,7 +50,7 @@ class Game():
     def push(self,rect):
         self.zasobnik.append(rect)
         self.index += 1
-
+    
     def popOut(self):
         self.index -= 1
         return self.zasobnik.remove((self.index) + 1)
@@ -101,7 +100,6 @@ class Game():
                                 
                             else:  #mazání kvůli následnému problému s průchodem
                                 self.obdelniky.append(Obdelnik(x,y,1,i))
-                                #print("second "+ str(x) + str(y) + str(i))
                                 for vyska in range(i):
                                     self.mapa[y + vyska][x] = " "
                                 break
@@ -156,6 +154,8 @@ class Game():
     #metoda, ve které vše potřebné, aby se bot pohyboval
     def podminkaBot(self):
         pass
+
+        
         
 #třída, ve které jsou vščechny potřebné metody na vykreslování rects atd   
 class Draw():
@@ -163,19 +163,19 @@ class Draw():
         self.game = game
 
     def draw(self):
-        global maps
+
         if self.game.gamemode == "Game" or self.game.gamemode == "Bot":
             win.fill((35,30,30))
             win.blit(marioTile,(450,200))
             color,selectColor,frajerColor,frajerSelectColor = (150,0,0),(0,150,0),(0,0,220),(255, 0, 255)
             default_color, complete_color = (70,70,70), (0,230,0)
+            
             for y in range(len(self.game.mapa)):
                 for x in range(len(self.game.mapa[0])):
                     if self.game.mapa[y][x] == "#":
                         win.blit(tile,(x * 50,y * 50))
                   
             #barva se mění podle toho, jaký rect je zvolený
-            
             for obdelnik in self.game.obdelniky:
                 if obdelnik == self.game.radioactive:
                     if self.game.frajer == self.game.radioactive:
@@ -215,21 +215,37 @@ class Draw():
         elif self.game.gamemode == "Levels":
             font4 = pygame.font.SysFont("comicsans", 100)
             text5 = font4.render("LEVELS", True,(230,230,230))
+            text6 = font4.render("1", True,(230,230,230))
+            text7 = font4.render("2", True,(230,230,230))
+            text8 = font4.render("3", True,(230,230,230))
+            text9 = font4.render("4", True,(230,230,230))
+            text10 = font4.render("5", True,(230,230,230))
+
             l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
             l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
             l3 = pygame.Rect(oknoX//5*3 - 110, oknoY//3 + 80,100,150)
             l4 = pygame.Rect(oknoX//5*4 - 110, oknoY//3 + 80,100,150)
             l5 = pygame.Rect(oknoX//5*5 - 110, oknoY//3 + 80,100,150)
+
             maps = []
             maps.append(l1)
             maps.append(l2)
             maps.append(l3)
             maps.append(l4)
             maps.append(l5)
+
             win.fill((0,0,0))
             for i in maps:
                 pygame.draw.rect(win,(70,70,70),pygame.Rect(i))
+
             win.blit(text5, (oknoX//2 - 125, oknoY//3 - 85))
+            win.blit(text6, (oknoX//5 * 1 - 78, oknoY//3 + 115))
+            win.blit(text7, (oknoX//5 * 2 - 78, oknoY//3 + 115))
+            win.blit(text8, (oknoX//5 * 3 - 78, oknoY//3 + 115))
+            win.blit(text9, (oknoX//5 * 4 - 78, oknoY//3 + 115))
+            win.blit(text10,(oknoX//5 * 5 - 78, oknoY//3 + 115))
+            win.blit(marioTile,(oknoX//2 - 25, oknoY//3))
+            
             pygame.display.update()
 
 #metoda, která obstarává všechny menu a obsahuje metodu pro překlikávání mezi rects
@@ -239,7 +255,8 @@ class Select():
         self.level = None
 
     def select(self):
-        
+        back_to_main_rect = pygame.Rect(oknoX//2 - 25, oknoY//3,50,50)
+        back_to_main_rect2 = pygame.Rect(450,200,50,50)
         if self.game.gamemode == "Main":
             if mainRect1.collidepoint(pygame.mouse.get_pos()):
                 self.game.obdelniky = []
@@ -251,6 +268,9 @@ class Select():
                 self.game.gamemode = "Bot"
 
         elif self.game.gamemode == "Game":
+            if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
+                self.game.gamemode = "Levels"
+                self.game.mapa = []
             for i in self.game.obdelniky:
                 if i.collidepoint(pygame.mouse.get_pos()):
                     self.game.radioactive = i
@@ -260,30 +280,47 @@ class Select():
         
         elif self.game.gamemode == "Levels":
             self.level_select()
+            if back_to_main_rect.collidepoint(pygame.mouse.get_pos()):
+                self.game.gamemode = "Main"
+                self.game.mapa = []
+        
+        elif self.game.gamemode == "Bot":
+            if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
+                self.game.gamemode = "Main"
+                self.game.mapa = []
     
     def level_select(self):
-        self.l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
-        self.l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
-        self.l3 = pygame.Rect(oknoX//5*3 - 110, oknoY//3 + 80,100,150)
-        self.l4 = pygame.Rect(oknoX//5*4 - 110, oknoY//3 + 80,100,150)
-        self.l5 = pygame.Rect(oknoX//5*5 - 110, oknoY//3 + 80,100,150)
+        l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
+        l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
+        l3 = pygame.Rect(oknoX//5*3 - 110, oknoY//3 + 80,100,150)
+        l4 = pygame.Rect(oknoX//5*4 - 110, oknoY//3 + 80,100,150)
+        l5 = pygame.Rect(oknoX//5*5 - 110, oknoY//3 + 80,100,150)
         map01 = texture1
         map02 = texture2
         map03 = texture3
         map04 = texture4
         map05 = texture5
-        if self.l1.collidepoint(pygame.mouse.get_pos()):
+        if l1.collidepoint(pygame.mouse.get_pos()):
+            self.game.obdelniky = []
             self.game.readMap_createObj(map01)
             self.game.gamemode = "Game"
-        if self.l2.collidepoint(pygame.mouse.get_pos()):
+
+        elif l2.collidepoint(pygame.mouse.get_pos()):
+            self.game.obdelniky = []
             self.game.readMap_createObj(map02)
             self.game.gamemode = "Game"
-        if self.l3.collidepoint(pygame.mouse.get_pos()):
+
+        elif l3.collidepoint(pygame.mouse.get_pos()):
+            self.game.obdelniky = []
             self.game.readMap_createObj(map03)
             self.game.gamemode = "Game"
-        if self.l4.collidepoint(pygame.mouse.get_pos()):
+
+        elif l4.collidepoint(pygame.mouse.get_pos()):
+            self.game.obdelniky = []            
             self.game.readMap_createObj(map04)
             self.game.gamemode = "Game"
-        if self.l5.collidepoint(pygame.mouse.get_pos()):
+
+        elif l5.collidepoint(pygame.mouse.get_pos()):
+            self.game.obdelniky = []                    
             self.game.readMap_createObj(map05)
             self.game.gamemode = "Game"
