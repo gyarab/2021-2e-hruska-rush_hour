@@ -42,25 +42,12 @@ class Game():
     def __init__(self):
         self.gamemode = "Main"
         self.radioactive = None
-        self.mapa, self.obdelniky = [], []
+        self.mapa, self.obdelniky, self.tracker = [], [], []
+        for i in range(1,9):
+            self.tracker.append([" "," "," "," "," "," "," "," ",])
         self.frajer = None
         self.index = 0
         self.zasobnik = []
-
-    def push(self,rect):
-        self.zasobnik.append(rect)
-        self.index += 1
-    
-    def popOut(self):
-        self.index -= 1
-        return self.zasobnik.remove((self.index) + 1)
-
-    def getIndex(self):
-        if len(self.zasobnik) == 0:
-            return len(self.zasobnik)
-        else:
-            return len(self.zasobnik) - 1
-        #1x rect -> poslední je na indexu 0, 0x rect -> index posledního je stále 0, proto tento if 
     
     def readMap_createObj(self,mapInput):
         radek = []
@@ -79,16 +66,19 @@ class Game():
                     win.blit(tile,(x * 50, y * 50))
                     
                 if self.mapa[y][x] != " " and self.mapa[y][x] != "#" and self.mapa[y][x] != "F":
-                    
+                    self.tracker[y][x] = self.mapa[y][x]
                     if self.mapa[y][x] == self.mapa[y][x+1]: # sirokej
                         i = 2
                         while True:
                             if self.mapa[y][x] == self.mapa[y][x+i]:
                                 i += 1
+                                self.tracker[y][x] = self.mapa[y][x]
+                                
                             else: #mazání kvůli následnému problému s průchodem
                                 self.obdelniky.append(Obdelnik(x,y,i,1))
-                                #print("first "+ str(x) + str(y) + str(i))
+
                                 for sirka in range(i):
+                                    self.tracker[y][x + sirka] = self.mapa[y][x + sirka]
                                     self.mapa[y][x + sirka] = " "
                                 break
                             
@@ -97,10 +87,12 @@ class Game():
                         while True:
                             if self.mapa[y][x] == self.mapa[y+i][x]:
                                 i += 1
-                                
+                                self.tracker[y][x] = self.mapa[y][x]
+
                             else:  #mazání kvůli následnému problému s průchodem
                                 self.obdelniky.append(Obdelnik(x,y,1,i))
                                 for vyska in range(i):
+                                    self.tracker[y + vyska][x] = self.mapa[y + vyska][x]
                                     self.mapa[y + vyska][x] = " "
                                 break
 
@@ -150,10 +142,27 @@ class Game():
                                     
         elif self.gamemode == "Bot":
             self.podminkaBot()
+
+    def return_case(self, poloha):
+        s = ""
+        for y in range(1,7):
+            for x in range(1,7):
+                s = s + str(poloha[y][x])
+        return s
     
     #metoda, ve které vše potřebné, aby se bot pohyboval
     def podminkaBot(self):
-        pass
+        #check jestli se už tato možnost stala
+        #projede pole a zapise string ve kterem jsou napsany moznosti
+        s = self.return_case(self.mapa)
+        if s in self.zasobnik:
+            return False
+        else:
+            self.zasobnik.append(s)
+
+        #for rect in self.obdelniky:
+            #if not rect.stoji:
+        print(self.tracker)
 
         
         
