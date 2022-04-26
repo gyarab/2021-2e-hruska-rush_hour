@@ -141,30 +141,72 @@ class Game():
                                     self.radioactive.x += 50
                                     
         elif self.gamemode == "Bot":
-            self.podminkaBot()
+            self.podminkaBot(self.tracker)
 
-    def return_case(self, poloha):
+    def return_case(self, map):
         s = ""
-        for y in range(1,7):
+        for y in range(1,8):
             for x in range(1,7):
-                s = s + str(poloha[y][x])
+                if map[y][x] == " ":
+                    s = s + "0"
+                else:
+                    s = s + str(map[y][x])
         return s
+
+    def move_right(self):
+        for obdelnik in self.obdelniky:
+            if not obdelnik.stoji:
+                width_rect = obdelnik.width//50
+                if self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] == " ":
+                    print(self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect])
+                    self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] = self.tracker[obdelnik.y//50][obdelnik.x//50 + 1]
+                    self.tracker[obdelnik.y//50][obdelnik.x//50] = " "
+        
+        
+
+    def move_left(self):
+        for obdelnik in self.obdelniky:
+            if not obdelnik.stoji:
+                width_rect = obdelnik.width//50
+                print("ob.x" + str(obdelnik.x))
+                print("ob.y" + str(obdelnik.y))
+                print(obdelnik)
+                if self.tracker[obdelnik.y//50][obdelnik.x//50 - 1] == " ":
+                    self.tracker[obdelnik.y//50][obdelnik.x//50 - 1] = self.tracker[obdelnik.y//50][obdelnik.x//50]
+                    self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] = " "
+
+    def move_up(self):
+        pass
+    def move_down(self):
+        pass
     
-    #metoda, ve které vše potřebné, aby se bot pohyboval
-    def podminkaBot(self):
+    def print_tracker(self, tracker):
+        s = ""
+        for i in range(1,8):
+            for x in range(1,7):
+                s += tracker[i][x]
+            print(s)
+            s = ""
+
+    def podminkaBot(self, lol):
         #check jestli se už tato možnost stala
         #projede pole a zapise string ve kterem jsou napsany moznosti
-        s = self.return_case(self.mapa)
+        s = self.return_case(lol)
+        
         if s in self.zasobnik:
             return False
         else:
             self.zasobnik.append(s)
-
-        #for rect in self.obdelniky:
-            #if not rect.stoji:
-        print(self.tracker)
-
         
+        print(self.zasobnik)
+        self.move_right()
+        self.print_tracker(lol)
+        
+        
+        if self.podminkaBot(self.tracker):
+            return True
+
+
         
 #třída, ve které jsou vščechny potřebné metody na vykreslování rects atd   
 class Draw():
