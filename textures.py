@@ -3,7 +3,7 @@ bot_texture = """##########
 #        #
 #    o   #
 #    o   #
-#HH  o   F
+#HH  ol  F
 #   jjl  #
 #     l  #
 #     l  #

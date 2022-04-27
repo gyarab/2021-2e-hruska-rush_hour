@@ -25,4 +25,3 @@ while True:
     
     g.podminka(pyEventy)
     dr.draw()
-

@@ -43,8 +43,9 @@ class Game():
         self.gamemode = "Main"
         self.radioactive = None
         self.mapa, self.obdelniky, self.tracker = [], [], []
-        for i in range(1,9):
-            self.tracker.append([" "," "," "," "," "," "," "," ",])
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+        for i in range(7):
+            self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
         self.frajer = None
         self.index = 0
         self.zasobnik = []
@@ -66,6 +67,7 @@ class Game():
                     win.blit(tile,(x * 50, y * 50))
                     
                 if self.mapa[y][x] != " " and self.mapa[y][x] != "#" and self.mapa[y][x] != "F":
+                    
                     self.tracker[y][x] = self.mapa[y][x]
                     if self.mapa[y][x] == self.mapa[y][x+1]: # sirokej
                         i = 2
@@ -145,42 +147,46 @@ class Game():
 
     def return_case(self, map):
         s = ""
-        for y in range(1,8):
-            for x in range(1,7):
+        for y in range(1,7):
+            for x in range(1,8):
                 if map[y][x] == " ":
                     s = s + "0"
                 else:
                     s = s + str(map[y][x])
         return s
 
-    def move_right(self):
-        for obdelnik in self.obdelniky:
-            if not obdelnik.stoji:
-                width_rect = obdelnik.width//50
-                if self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] == " ":
-                    print(self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect])
-                    self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] = self.tracker[obdelnik.y//50][obdelnik.x//50 + 1]
-                    self.tracker[obdelnik.y//50][obdelnik.x//50] = " "
+    def move_right(self, rect):
         
+        print("metoda move_right")
+        width_rect = rect.width//50
+        if self.tracker[rect.y//50][rect.x//50 + width_rect] == " ":
+            self.tracker[rect.y//50][rect.x//50 + width_rect] = self.tracker[rect.y//50][rect.x//50]
+            self.tracker[rect.y//50][rect.x//50 - 1] = " "
+        self.print_tracker(self.tracker)
+
+    def move_left(self, rect):
+        print("metoda move_left")
+        width_rect = rect.width//50
+        if self.tracker[rect.y//50][rect.x//50 - 1] == " ":
+            self.tracker[rect.y//50][rect.x//50 - 1] = self.tracker[rect.y//50][rect.x//50]
+            self.tracker[rect.y//50][rect.x//50 + width_rect] = " "
+
+    def move_up(self, rect):
+        print("metoda move_up")
+        height_rect = rect.height//50 - 1
+        if self.tracker[rect.y//50 - 1][rect.x//50] == " ":
+            self.tracker[rect.y//50 - 1][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
+            self.tracker[rect.y//50 + height_rect][rect.x//50] = " "
         
+    def move_down(self, rect):
+        print("metoda move_down")
+        height_rect = rect.height//50 - 1
+        if self.tracker[rect.y//50 + height_rect][rect.x//50] == " ":
+            self.tracker[rect.y//50 + height_rect][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
+            self.tracker[rect.y//50 - 1][rect.x//50] = " "
 
-    def move_left(self):
-        for obdelnik in self.obdelniky:
-            if not obdelnik.stoji:
-                width_rect = obdelnik.width//50
-                print("ob.x" + str(obdelnik.x))
-                print("ob.y" + str(obdelnik.y))
-                print(obdelnik)
-                if self.tracker[obdelnik.y//50][obdelnik.x//50 - 1] == " ":
-                    self.tracker[obdelnik.y//50][obdelnik.x//50 - 1] = self.tracker[obdelnik.y//50][obdelnik.x//50]
-                    self.tracker[obdelnik.y//50][obdelnik.x//50 + width_rect] = " "
-
-    def move_up(self):
-        pass
-    def move_down(self):
-        pass
-    
     def print_tracker(self, tracker):
+        print("metoda print_tracker")
         s = ""
         for i in range(1,8):
             for x in range(1,7):
@@ -191,23 +197,48 @@ class Game():
     def podminkaBot(self, lol):
         #check jestli se už tato možnost stala
         #projede pole a zapise string ve kterem jsou napsany moznosti
+        print(self.zasobnik)
+        self.print_tracker(self.tracker)
+
         s = self.return_case(lol)
-        
         if s in self.zasobnik:
             return False
         else:
             self.zasobnik.append(s)
-        
-        print(self.zasobnik)
-        self.move_right()
-        self.print_tracker(lol)
-        
-        
-        if self.podminkaBot(self.tracker):
-            return True
 
+        for rect in self.obdelniky:
+            print(rect.height)
+            if not rect.stoji: #horizontal
+                #zeptá se rect jestli může jet doprava, pokud ano, tak jede
+                #pokud ne posouvá se code na další možnosti pohybu
+                #po pohnutí se zavolá rekurze a nahraje se kombinace trackeru
 
-        
+                #if self.tracker[rect.y//50][rect.x//50 + rect.width//50] == " ": #move right?
+                    self.move_right(rect)
+                    if self.podminkaBot(self.tracker):
+                        print("huh")
+                        return True
+                
+                #if self.tracker[rect.y//50][rect.x//50 - 1] == " ": #move left?
+                    self.move_left(rect)
+                    if self.podminkaBot(self.tracker):
+                        return True
+
+            elif rect.stoji: #vertical
+                #if self.tracker[rect.y//50 + rect.height//50][rect.x//50] == " ": #move down? 
+                    self.move_down(rect)                                                      
+                    if self.podminkaBot(self.tracker):
+                        return True
+                    
+
+                #if self.tracker[rect.y//50 - 1][rect.x//50]: #move up?
+                    self.move_up(rect)                                                        
+                    if self.podminkaBot(self.tracker):
+                        return True
+                    
+            elif self.mapa[rect.y // 50][rect.x//50 + rect.width//50 - 1] == "F":
+                print("vi von")
+
 #třída, ve které jsou vščechny potřebné metody na vykreslování rects atd   
 class Draw():
     def __init__(self,game):
