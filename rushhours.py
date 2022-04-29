@@ -7,7 +7,7 @@ pygame.display.set_caption("rush hours")
 oknoX,oknoY = 600,500
 win = pygame.display.set_mode((oknoX,oknoY))
 tile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/tile.jpg")
-marioTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/mariotile.jpg")
+marioTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/marioTile.jpg")
 
 #obdelníky potřebné pro metodu collidepoint
 mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
@@ -26,31 +26,26 @@ class Obdelnik(pygame.Rect):
         
         if self.height > self.width:
             self.stoji = True
-            self.hore = True
-            self.dole = True
-            self.prava = False
-            self.leva = False
 
         elif self.height < self.width:
             self.stoji = False
-            self.prava = True
-            self.leva = True
-            self.hore = False
-            self.dole = False
             
 class Game():
     def __init__(self):
         self.gamemode = "Main"
         self.radioactive = None
         self.mapa, self.obdelniky, self.tracker = [], [], []
-        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
-        for i in range(7):
-            self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
         self.frajer = None
         self.index = 0
         self.zasobnik = []
     
     def readMap_createObj(self,mapInput):
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+        for i in range(7):
+            self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+
+        self.zasobnik = []
         radek = []
         for i in mapInput:                                           
             if i == "\n":
@@ -105,7 +100,7 @@ class Game():
                 self.radioactive = self.frajer
 
     #metoda pro pohyb(podle inputu z klávesnice
-    def podminka(self,eventy):
+    def move_objects(self, eventy):
         if self.gamemode == "Game":
             for event in eventy:
                 if event.type == pygame.KEYDOWN:
@@ -156,40 +151,49 @@ class Game():
         return s
 
     def move_right(self, rect):
-        
-        print("metoda move_right")
+        #print("right")
         width_rect = rect.width//50
-        if self.tracker[rect.y//50][rect.x//50 + width_rect] == " ":
-            self.tracker[rect.y//50][rect.x//50 + width_rect] = self.tracker[rect.y//50][rect.x//50]
-            self.tracker[rect.y//50][rect.x//50 - 1] = " "
-        self.print_tracker(self.tracker)
+        if not rect.stoji:
+            if self.tracker[rect.y//50][rect.x//50 + width_rect] == " ":
+                self.tracker[rect.y//50][rect.x//50 + width_rect] = self.tracker[rect.y//50][rect.x//50]
+                self.tracker[rect.y//50][rect.x//50] = " "
+                rect.x += 50
+
+            elif rect.collidepoint([9*50,5*50]):
+                print("vi von")
+                self.gamemode = "End"
 
     def move_left(self, rect):
-        print("metoda move_left")
+        #print("left")
         width_rect = rect.width//50
-        if self.tracker[rect.y//50][rect.x//50 - 1] == " ":
-            self.tracker[rect.y//50][rect.x//50 - 1] = self.tracker[rect.y//50][rect.x//50]
-            self.tracker[rect.y//50][rect.x//50 + width_rect] = " "
+        if not rect.stoji:
+            if self.tracker[rect.y//50][rect.x//50 - 1] == " ":
+                self.tracker[rect.y//50][rect.x//50 - 1] = self.tracker[rect.y//50][rect.x//50]
+                self.tracker[rect.y//50][rect.x//50 + width_rect-1] = " "
+                rect.x -= 50
 
     def move_up(self, rect):
-        print("metoda move_up")
-        height_rect = rect.height//50 - 1
-        if self.tracker[rect.y//50 - 1][rect.x//50] == " ":
-            self.tracker[rect.y//50 - 1][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
-            self.tracker[rect.y//50 + height_rect][rect.x//50] = " "
-        
+        #print("up")
+        height_rect = rect.height//50
+        if rect.stoji:
+            if self.tracker[rect.y//50 - 1][rect.x//50] == " ":
+                self.tracker[rect.y//50 - 1][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
+                self.tracker[rect.y//50 + (height_rect-1)][rect.x//50] = " "
+                rect.y -= 50
+            
     def move_down(self, rect):
-        print("metoda move_down")
-        height_rect = rect.height//50 - 1
-        if self.tracker[rect.y//50 + height_rect][rect.x//50] == " ":
-            self.tracker[rect.y//50 + height_rect][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
-            self.tracker[rect.y//50 - 1][rect.x//50] = " "
+        #print("down")
+        height_rect = rect.height//50
+        if rect.stoji:
+            if self.tracker[rect.y//50 + height_rect][rect.x//50] == " ":
+                self.tracker[rect.y//50 + height_rect][rect.x//50] = self.tracker[rect.y//50][rect.x//50]
+                self.tracker[rect.y//50][rect.x//50] = " "
+                rect.y += 50
 
     def print_tracker(self, tracker):
-        print("metoda print_tracker")
         s = ""
-        for i in range(1,8):
-            for x in range(1,7):
+        for i in range(0,9):
+            for x in range(0,10):
                 s += tracker[i][x]
             print(s)
             s = ""
@@ -197,9 +201,6 @@ class Game():
     def podminkaBot(self, lol):
         #check jestli se už tato možnost stala
         #projede pole a zapise string ve kterem jsou napsany moznosti
-        print(self.zasobnik)
-        self.print_tracker(self.tracker)
-
         s = self.return_case(lol)
         if s in self.zasobnik:
             return False
@@ -207,37 +208,38 @@ class Game():
             self.zasobnik.append(s)
 
         for rect in self.obdelniky:
-            print(rect.height)
             if not rect.stoji: #horizontal
                 #zeptá se rect jestli může jet doprava, pokud ano, tak jede
                 #pokud ne posouvá se code na další možnosti pohybu
                 #po pohnutí se zavolá rekurze a nahraje se kombinace trackeru
+                
+                if self.tracker[4][8] == "H":
+                    self.gamemode = "End" 
+                    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                self.print_tracker(self.tracker)
 
-                #if self.tracker[rect.y//50][rect.x//50 + rect.width//50] == " ": #move right?
-                    self.move_right(rect)
+                self.move_right(rect)
+                if self.gamemode != "End":    
                     if self.podminkaBot(self.tracker):
-                        print("huh")
                         return True
                 
-                #if self.tracker[rect.y//50][rect.x//50 - 1] == " ": #move left?
-                    self.move_left(rect)
+                self.move_left(rect)
+                if self.gamemode != "End":
                     if self.podminkaBot(self.tracker):
                         return True
 
             elif rect.stoji: #vertical
-                #if self.tracker[rect.y//50 + rect.height//50][rect.x//50] == " ": #move down? 
                     self.move_down(rect)                                                      
-                    if self.podminkaBot(self.tracker):
-                        return True
-                    
+                    if self.gamemode != "End":
+                        if self.podminkaBot(self.tracker):
+                            return True
 
-                #if self.tracker[rect.y//50 - 1][rect.x//50]: #move up?
-                    self.move_up(rect)                                                        
-                    if self.podminkaBot(self.tracker):
-                        return True
-                    
-            elif self.mapa[rect.y // 50][rect.x//50 + rect.width//50 - 1] == "F":
-                print("vi von")
+                    self.move_up(rect) 
+                    if self.gamemode != "End":                                                       
+                        if self.podminkaBot(self.tracker):
+                            return True
+
+            #pygame.time.delay(10)
 
 #třída, ve které jsou vščechny potřebné metody na vykreslování rects atd   
 class Draw():
@@ -246,7 +248,7 @@ class Draw():
 
     def draw(self):
 
-        if self.game.gamemode == "Game" or self.game.gamemode == "Bot":
+        if self.game.gamemode == "Game":
             win.fill((35,30,30))
             win.blit(marioTile,(450,200))
             color,selectColor,frajerColor,frajerSelectColor = (150,0,0),(0,150,0),(0,0,220),(255, 0, 255)
@@ -329,6 +331,14 @@ class Draw():
             win.blit(marioTile,(oknoX//2 - 25, oknoY//3))
             
             pygame.display.update()
+        elif self.game.gamemode == "Bot":
+            win.fill((0,0,0))
+            for obdelnik in self.game.obdelniky:
+                if obdelnik == self.game.frajer:
+                    pygame.draw.rect(win, (255, 0, 255), (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
+                else: 
+                    pygame.draw.rect(win, (150,0,0), (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
+            pygame.display.update()
 
 #metoda, která obstarává všechny menu a obsahuje metodu pro překlikávání mezi rects
 class Select():
@@ -353,6 +363,7 @@ class Select():
             if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
                 self.game.gamemode = "Levels"
                 self.game.mapa = []
+
             for i in self.game.obdelniky:
                 if i.collidepoint(pygame.mouse.get_pos()):
                     self.game.radioactive = i

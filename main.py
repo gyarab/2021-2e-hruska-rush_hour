@@ -1,5 +1,5 @@
 import pygame, sys
-from mainMenu import* 
+from rushhours import* 
 pygame.init()
 
 oknoX,oknoY = 600,500
@@ -23,5 +23,5 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             sc.select()
     
-    g.podminka(pyEventy)
+    g.move_objects(pyEventy)
     dr.draw()
