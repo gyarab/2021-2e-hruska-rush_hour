@@ -8,11 +8,12 @@ oknoX,oknoY = 600,500
 win = pygame.display.set_mode((oknoX,oknoY))
 tile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/tile.jpg")
 marioTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/marioTile.jpg")
+hintTile = pygame.image.load("C:/Users/fifah/Desktop/ročníkovka/otaznik.png")
 
 #obdelníky potřebné pro metodu collidepoint
 mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
 mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2)
-
+hint_rect = pygame.draw.rect(win, (0,0,0), pygame.Rect(500,25,50,50),2)
 ####################################################################################
 
 #class pro vytvoření rects v metodě readMap_createObj, leva/prava/hore/dole - bool pro pohyb v botovi
@@ -29,23 +30,30 @@ class Obdelnik(pygame.Rect):
 
         elif self.height < self.width:
             self.stoji = False
-            
+
+#jde o třídu s veškerými metodami potřebnými na spuštění a chod hry
 class Game():
     def __init__(self):
         self.gamemode = "Main"
         self.radioactive = None
         self.mapa, self.obdelniky, self.tracker = [], [], []
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+        for i in range(7):
+            self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
         self.frajer = None
         self.index = 0
-        self.zasobnik = []
-    
-    def readMap_createObj(self,mapInput):
+        self.container = []
+    #pomocí této metody se vytvoří objekty typu obdelnik a následně se nahrají do pole obdelniky
+    #metoda funguje na bázi průchodu vstupního pole po řádcích (více v dokumentaci)
+    def readMap_createObj(self, mapInput):
+        self.tracker = []
         self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
         for i in range(7):
             self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
         self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
 
-        self.zasobnik = []
+        self.container = []
         radek = []
         for i in mapInput:                                           
             if i == "\n":
@@ -93,13 +101,15 @@ class Game():
                                     self.mapa[y + vyska][x] = " "
                                 break
 
-        #zjištění bloku, který je hlavní
+        #pomocí tohoto kusu kódu se jeden z obdélníku identifikuje jako hlavní
         for i in self.obdelniky:
             if i.x == 50 and i.y == 200:
                 self.frajer = i
                 self.radioactive = self.frajer
 
-    #metoda pro pohyb(podle inputu z klávesnice
+    #metoda pro pohyb obdélníků po deskce
+    #metoda funguje pomocí kontrolování zmáčknutých kláves a poté v daném směru přepisuje koordinace obdélníku,
+    # které zpracuje metoda draw
     def move_objects(self, eventy):
         if self.gamemode == "Game":
             for event in eventy:
@@ -140,6 +150,15 @@ class Game():
         elif self.gamemode == "Bot":
             self.podminkaBot(self.tracker)
 
+    #reset pole tracker je důležitý v opakovaném používání metody createObj..., jelikož po neresetování pole vznikají chyby a chybné hlášky
+    def reset_tracker(self):
+        self.tracker = []
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+        for i in range(7):
+            self.tracker.append(["#"," "," "," "," "," "," "," "," ","#"])
+        self.tracker.append(["#","#","#","#","#","#","#","#","#","#"])
+
+    #jde o metodu, která vrací aktuální kombinaci obdélníků na hrací ploše (str)
     def return_case(self, map):
         s = ""
         for y in range(1,7):
@@ -150,8 +169,8 @@ class Game():
                     s = s + str(map[y][x])
         return s
 
+    #metody move_xxx jsou potřebné pro fungování bota a zajišťují posouvání obdélníku při volném prostoru před ním
     def move_right(self, rect):
-        #print("right")
         width_rect = rect.width//50
         if not rect.stoji:
             if self.tracker[rect.y//50][rect.x//50 + width_rect] == " ":
@@ -164,7 +183,6 @@ class Game():
                 self.gamemode = "End"
 
     def move_left(self, rect):
-        #print("left")
         width_rect = rect.width//50
         if not rect.stoji:
             if self.tracker[rect.y//50][rect.x//50 - 1] == " ":
@@ -173,7 +191,6 @@ class Game():
                 rect.x -= 50
 
     def move_up(self, rect):
-        #print("up")
         height_rect = rect.height//50
         if rect.stoji:
             if self.tracker[rect.y//50 - 1][rect.x//50] == " ":
@@ -182,7 +199,6 @@ class Game():
                 rect.y -= 50
             
     def move_down(self, rect):
-        #print("down")
         height_rect = rect.height//50
         if rect.stoji:
             if self.tracker[rect.y//50 + height_rect][rect.x//50] == " ":
@@ -190,6 +206,7 @@ class Game():
                 self.tracker[rect.y//50][rect.x//50] = " "
                 rect.y += 50
 
+    #metoda zajišťující vypsání pole tracker po řádcích a v přehledné formě
     def print_tracker(self, tracker):
         s = ""
         for i in range(0,9):
@@ -198,25 +215,28 @@ class Game():
             print(s)
             s = ""
 
+    #metoda zajišťuje chod bota pomocí rekurze a závoreň dokáže vykreslovat obdélníky i při zanořování rekurze
     def podminkaBot(self, lol):
-        #check jestli se už tato možnost stala
-        #projede pole a zapise string ve kterem jsou napsany moznosti
+
+        self.draw()
+
+        #tento blok kódu zjišťuje jestli se kombinace vrácená předchozí metodou neshoduje s jinou kombinací již zapsanou v poli
         s = self.return_case(lol)
-        if s in self.zasobnik:
+        if s in self.container:
             return False
         else:
-            self.zasobnik.append(s)
+            self.container.append(s)
 
+
+        #zeptá se rect jestli může jet doprava, pokud ano, tak jede
+        #pokud ne, tak se kód posouvá na další možnosti pohybu
+        #po pohnutí se zavolá rekurze a nahraje se kombinace trackeru
         for rect in self.obdelniky:
             if not rect.stoji: #horizontal
-                #zeptá se rect jestli může jet doprava, pokud ano, tak jede
-                #pokud ne posouvá se code na další možnosti pohybu
-                #po pohnutí se zavolá rekurze a nahraje se kombinace trackeru
                 
+                #pokud vrátí True, tak se hlavní obdélník dostal do cíle
                 if self.tracker[4][8] == "H":
                     self.gamemode = "End" 
-                    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                self.print_tracker(self.tracker)
 
                 self.move_right(rect)
                 if self.gamemode != "End":    
@@ -239,42 +259,42 @@ class Game():
                         if self.podminkaBot(self.tracker):
                             return True
 
-            #pygame.time.delay(10)
+        pygame.time.delay(200)
 
-#třída, ve které jsou vščechny potřebné metody na vykreslování rects atd   
-class Draw():
-    def __init__(self,game):
-        self.game = game
-
+ 
+    #metoda zajišťující veškeré vykreslování
     def draw(self):
 
-        if self.game.gamemode == "Game":
+        if self.gamemode == "Game":
             win.fill((35,30,30))
             win.blit(marioTile,(450,200))
             color,selectColor,frajerColor,frajerSelectColor = (150,0,0),(0,150,0),(0,0,220),(255, 0, 255)
-            default_color, complete_color = (70,70,70), (0,230,0)
+            #default_color, complete_color = (70,70,70), (0,230,0)
             
-            for y in range(len(self.game.mapa)):
-                for x in range(len(self.game.mapa[0])):
-                    if self.game.mapa[y][x] == "#":
+            for y in range(len(self.mapa)):
+                for x in range(len(self.mapa[0])):
+                    if self.mapa[y][x] == "#":
                         win.blit(tile,(x * 50,y * 50))
-                  
-            #barva se mění podle toho, jaký rect je zvolený
-            for obdelnik in self.game.obdelniky:
-                if obdelnik == self.game.radioactive:
-                    if self.game.frajer == self.game.radioactive:
+                    
+            #barvy obdélníků se mění při zvolení nebo pokud je obdélník hlavní
+            for obdelnik in self.obdelniky:
+                if obdelnik == self.radioactive:
+                    if self.frajer == self.radioactive:
                         pygame.draw.rect(win, frajerSelectColor, (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
                     else:
                         pygame.draw.rect(win, selectColor, (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
-                elif obdelnik == self.game.frajer:
+                elif obdelnik == self.frajer:
                     pygame.draw.rect(win, frajerColor, (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
                 else: 
                     pygame.draw.rect(win, color, (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
+            #šedý obdélník za hrací plochou
             pygame.draw.rect(win,(60,60,60),(500,0,250,450))
             pygame.display.update()
 
-        elif self.game.gamemode == "Main":
+        #vykreslování všech textů/obdélníků v hlavním menu
+        elif self.gamemode == "Main":
             win.fill((35,30,30))
+            win.blit(hintTile,(500, 25))
             mainRect1 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*1 - 85,250,150),2) 
             mainRect2 = pygame.draw.rect(win, (100,0,0), pygame.Rect(oknoX//2 - 125,oknoY//3*2 - 70,250,150),2) 
             font = pygame.font.SysFont("Arial", 45)
@@ -286,7 +306,8 @@ class Draw():
             win.blit(text2,(oknoX//2 - 70,oknoY//3*1 + 145))
             pygame.display.update()
 
-        elif self.game.gamemode == "End":
+        #vykreslování všech textů/obdélníků v koncové obrazovce
+        elif self.gamemode == "End":
             win.fill((0,0,0))
             font2 = pygame.font.SysFont("comicsans", 100)
             font3 = pygame.font.SysFont("javanesetext", 40)
@@ -296,7 +317,8 @@ class Draw():
             win.blit(text4,(oknoX//2 - 250, oknoY//3*2))
             pygame.display.update()
 
-        elif self.game.gamemode == "Levels":
+        #vykreslování všech textů/obdélníků při volení levelů v módu pro jednoho hráče
+        elif self.gamemode == "Levels":
             font4 = pygame.font.SysFont("comicsans", 100)
             text5 = font4.render("LEVELS", True,(230,230,230))
             text6 = font4.render("1", True,(230,230,230))
@@ -331,57 +353,81 @@ class Draw():
             win.blit(marioTile,(oknoX//2 - 25, oknoY//3))
             
             pygame.display.update()
-        elif self.game.gamemode == "Bot":
+
+        #vykreslení bariér, obdélníků při spuštění bota
+        elif self.gamemode == "Bot":
             win.fill((0,0,0))
-            for obdelnik in self.game.obdelniky:
-                if obdelnik == self.game.frajer:
+            for y in range(len(self.tracker)):
+                for x in range(len(self.tracker[0])):
+                    if self.tracker[y][x] == "#":
+                        win.blit(tile,(x * 50,y * 50))
+
+            for obdelnik in self.obdelniky:
+                if obdelnik == self.frajer:
                     pygame.draw.rect(win, (255, 0, 255), (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
                 else: 
                     pygame.draw.rect(win, (150,0,0), (obdelnik.x+3 , obdelnik.y+3, obdelnik.width-6, obdelnik.height-6))
+            pygame.draw.rect(win,(60,60,60),(500,0,250,450))
+            win.blit(marioTile,(450,200))
             pygame.display.update()
 
-#metoda, která obstarává všechny menu a obsahuje metodu pro překlikávání mezi rects
-class Select():
-    def __init__(self,game):
-        self.game = game
-        self.level = None
+        #vykreslení textu při zmáčknutí na otazník
+        elif self.gamemode == "Hint":
+            win.fill((35,30,30))
+            win.blit(hintTile,(500, 25))
+            font5 = pygame.font.SysFont("comicsans", 40)
+            text11 = font5.render("pro zvolení obdélníku použijte myš", True,(230,230,230))
+            text12 = font5.render("pro pohyb obdélníkem použijte šipky", True,(230,230,230))
+            text13 = font5.render("žlutý čtverec funguje jako tlačítko zpět", True,(230,230,230))
+            win.blit(text11,(oknoX//2 - 225, oknoY//3-70))
+            win.blit(text12,(oknoX//2 - 250, oknoY//3*2-70))
+            win.blit(text13,(oknoX//2 - 270, oknoY//3*3-70))
+            pygame.display.update()
 
+    #metoda, která obstarává všechny menu a obsahuje metodu pro překlikávání mezi rects
     def select(self):
         back_to_main_rect = pygame.Rect(oknoX//2 - 25, oknoY//3,50,50)
         back_to_main_rect2 = pygame.Rect(450,200,50,50)
-        if self.game.gamemode == "Main":
+        if self.gamemode == "Main":
             if mainRect1.collidepoint(pygame.mouse.get_pos()):
-                self.game.obdelniky = []
-                self.game.gamemode = "Levels"
+                self.obdelniky = []
+                self.gamemode = "Levels"
 
             elif mainRect2.collidepoint(pygame.mouse.get_pos()):
-                self.game.obdelniky = []
-                self.game.readMap_createObj(bot_texture)
-                self.game.gamemode = "Bot"
-
-        elif self.game.gamemode == "Game":
-            if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
-                self.game.gamemode = "Levels"
-                self.game.mapa = []
-
-            for i in self.game.obdelniky:
-                if i.collidepoint(pygame.mouse.get_pos()):
-                    self.game.radioactive = i
+                self.obdelniky, self.mapa = [], []
+                self.readMap_createObj(bot_texture)
+                self.gamemode = "Bot"
             
-        elif self.game.gamemode == "End":
-            self.game.gamemode = "Main"
+            elif hint_rect.collidepoint(pygame.mouse.get_pos()):
+                self.gamemode = "Hint"
         
-        elif self.game.gamemode == "Levels":
+        elif self.gamemode == "Hint":
+            if hint_rect.collidepoint(pygame.mouse.get_pos()):
+                self.gamemode = "Main"
+                
+        elif self.gamemode == "Game":
+            if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
+                self.mapa = []
+                self.gamemode = "Levels"  
+
+            for i in self.obdelniky:
+                if i.collidepoint(pygame.mouse.get_pos()):
+                    self.radioactive = i
+            
+        elif self.gamemode == "End":
+            self.gamemode = "Main"
+        
+        elif self.gamemode == "Levels":
             self.level_select()
             if back_to_main_rect.collidepoint(pygame.mouse.get_pos()):
-                self.game.gamemode = "Main"
-                self.game.mapa = []
+                self.mapa = []
+                self.gamemode = "Main"
         
-        elif self.game.gamemode == "Bot":
+        elif self.gamemode == "Bot":
             if back_to_main_rect2.collidepoint(pygame.mouse.get_pos()):
-                self.game.gamemode = "Main"
-                self.game.mapa = []
-    
+                self.mapa = []
+                self.gamemode = "Main"
+
     def level_select(self):
         l1 = pygame.Rect(oknoX//5*1 - 110, oknoY//3 + 80,100,150)
         l2 = pygame.Rect(oknoX//5*2 - 110, oknoY//3 + 80,100,150)
@@ -394,26 +440,31 @@ class Select():
         map04 = texture4
         map05 = texture5
         if l1.collidepoint(pygame.mouse.get_pos()):
-            self.game.obdelniky = []
-            self.game.readMap_createObj(map01)
-            self.game.gamemode = "Game"
+            self.obdelniky = []
+            self.readMap_createObj(map01)
+            self.reset_tracker()
+            self.gamemode = "Game"
 
         elif l2.collidepoint(pygame.mouse.get_pos()):
-            self.game.obdelniky = []
-            self.game.readMap_createObj(map02)
-            self.game.gamemode = "Game"
+            self.obdelniky = []
+            self.readMap_createObj(map02)
+            self.reset_tracker()
+            self.gamemode = "Game"
 
         elif l3.collidepoint(pygame.mouse.get_pos()):
-            self.game.obdelniky = []
-            self.game.readMap_createObj(map03)
-            self.game.gamemode = "Game"
+            self.obdelniky = []
+            self.readMap_createObj(map03)
+            self.reset_tracker()
+            self.gamemode = "Game"
 
         elif l4.collidepoint(pygame.mouse.get_pos()):
-            self.game.obdelniky = []            
-            self.game.readMap_createObj(map04)
-            self.game.gamemode = "Game"
+            self.obdelniky = []            
+            self.readMap_createObj(map04)
+            self.reset_tracker()
+            self.gamemode = "Game"
 
         elif l5.collidepoint(pygame.mouse.get_pos()):
-            self.game.obdelniky = []                    
-            self.game.readMap_createObj(map05)
-            self.game.gamemode = "Game"
+            self.obdelniky = []                    
+            self.readMap_createObj(map05)
+            self.reset_tracker()
+            self.gamemode = "Game"

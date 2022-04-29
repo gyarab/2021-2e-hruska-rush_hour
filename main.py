@@ -9,8 +9,6 @@ FPS = 60
 clock = pygame.time.Clock()
 
 g = Game()
-dr = Draw(g)
-sc = Select(g)
 
 while True:
     pyEventy = []
@@ -21,7 +19,7 @@ while True:
                 pygame.quit()
                 sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            sc.select()
+            g.select()
     
     g.move_objects(pyEventy)
-    dr.draw()
+    g.draw()

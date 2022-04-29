@@ -1,12 +1,12 @@
 
 bot_texture = """##########
-#        #
-#    o   #
-#    o   #
-#HH  o   F
-#   jj   #
-#     lab#
-#     lab#
+#    zzz #
+#     l  #
+#     l  #
+#HH   lp F
+# o IIIp #
+# o    p #
+# o      #
 ##########"""
 
 texture1 = """##########
